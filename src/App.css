@@ -1,0 +1,17 @@
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0 auto;
+
+  text-align: center;
+  background-color: #254660;
+}
+
+.centered-div {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background-color:#22B8B9;
+  padding: 10px;
+}
