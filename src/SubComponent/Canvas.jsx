@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Stage, Layer, Rect, Image, Circle, Group } from "react-konva";
 import imgsrc from "../../src/assets/table.png";
 import { Button, Space } from "antd";
+import { dragBoundFunc, dragBoundFuncRectangle,} from "./utils";
 
 const Canvas = () => {
   const data={
@@ -262,6 +263,12 @@ const Canvas = () => {
    }
    const [selectedDisplayType, setSelectedDisplayType] = useState("rows");
    const [currentMode, setcurrentMode] = useState(null);
+   const [annotations, setAnnotations] = useState([]);
+   const [selectedRect, setSelectedRect] = useState(null);
+   const [isCreatingRect, setIsCreatingRect] = useState(false);
+   const [size, setSize] = useState({ width: 900, height: 700 });
+   const [annotationHistory, setAnnotationHistory] = useState([]);
+   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
    const convertBoundingBoxData = () => {
     const convertedAnnotations = [];
     const displayData = data[selectedDisplayType];
@@ -271,16 +278,13 @@ const Canvas = () => {
       const height = y2 - y1;
       convertedAnnotations.push({ x: x1, y: y1, width, height });
     }
-    setAnnotations(convertedAnnotations);
+    handleAnnotationChange(convertedAnnotations)
+  
   };
    useEffect(() => {
     convertBoundingBoxData();
-    
+   
   }, [selectedDisplayType]);
-  const [annotations, setAnnotations] = useState([]);
-  const [selectedRect, setSelectedRect] = useState(null);
-  const [isCreatingRect, setIsCreatingRect] = useState(false);
-  const [size, setSize] = useState({ width: 900, height: 700 });
 
   const ImageDisplay = ({ src }) => {
     const imageRef = useRef(null);
@@ -322,7 +326,8 @@ const Canvas = () => {
     if(currentMode==='Create'){
       const { x, y } = event.target.getStage().getPointerPosition();
       setIsCreatingRect(true);
-      setAnnotations([...annotations, { x, y, width: 0, height: 0 }]);
+      const newAnnotations=[...annotations, { x, y, width: 0, height: 0 }]
+     setAnnotations(newAnnotations)
     }
    
   };
@@ -331,6 +336,7 @@ const Canvas = () => {
     if(currentMode==='Create'){
       setIsCreatingRect(false);
       setSelectedRect(null);
+      handleAnnotationChange(annotations); 
     }
   
   };
@@ -356,17 +362,13 @@ const Canvas = () => {
     }
 
   };
+ 
 
   const handleRectClick = (index) => {
     setSelectedRect(index);
   };
 
-  const handleRectDragEnd = () => {
-    setSelectedRect(null);
-  };
-  const handleDeselect = () => {
-    setSelectedRect(null);
-  };
+
 
   // Function to delete the selected rectangle
   const handleDelete = () => {
@@ -376,6 +378,7 @@ const Canvas = () => {
       setAnnotations(newAnnotations);
       setSelectedRect(null);
     }
+
   };
 
   // Function to update the selected rectangle
@@ -407,7 +410,7 @@ const Canvas = () => {
         const newAnnotations = [...annotations];
         
         newAnnotations.splice(selectedRect, 1);
-        setAnnotations(newAnnotations);
+        handleAnnotationChange(newAnnotations);
         setSelectedRect(null);
     
         // Depending on your data structure, remove the corresponding entry
@@ -429,17 +432,16 @@ const Canvas = () => {
   
     
   }, [selectedRect])
+
+  const handleResize = (event, index,indexRect) => {
   
- 
-  const handleCornerDragMove = (event, index) => {
     
-    if (selectedRect !== null) {
-      const { x, y } = event.target.position();
       const newAnnotations = [...annotations];
-      const rect = newAnnotations[selectedRect];
+      const rect = newAnnotations[indexRect];
+      
+      const { x, y } = event.target.getStage().getPointerPosition();
       const deltaX = x - rect.x;
       const deltaY = y - rect.y;
-
       switch (index) {
         case 0: // Top left corner
           rect.width -= deltaX;
@@ -452,23 +454,40 @@ const Canvas = () => {
           rect.height -= deltaY;
           rect.y = y;
           break;
-        case 2: // Bottom right corner
-          rect.width = x - rect.x;
-          rect.height = y - rect.y;
-          break;
-        case 3: // Bottom left corner
+        case 2: // Bottom left corner
           rect.width -= deltaX;
           rect.height = y - rect.y;
           rect.x = x;
           break;
+        case 3: // Bottom right corner
+          rect.width = x - rect.x;
+          rect.height = y - rect.y;
+          break;
         default:
           break;
       }
-
       setAnnotations(newAnnotations);
-    }
+    
   };
 
+    const handleUndo = () => {
+      console.log(currentHistoryIndex);
+      if (currentHistoryIndex >0) {
+        const previousAnnotations = annotationHistory[currentHistoryIndex - 1];
+        setCurrentHistoryIndex(currentHistoryIndex - 1);
+        setAnnotations(previousAnnotations);
+      }
+    };
+    const handleAnnotationChange = (newAnnotations) => {
+      setAnnotations(newAnnotations);
+      // Add the current state to the history
+      setAnnotationHistory((prevHistory) => {
+        const newHistory = [...prevHistory.slice(0, currentHistoryIndex + 1), newAnnotations];
+        setCurrentHistoryIndex(newHistory.length - 1);
+        return newHistory;
+      });
+    };
+    
   return (
     <>
       <div class="centered-div">
@@ -477,7 +496,8 @@ const Canvas = () => {
           <Button onClick={()=>handleModeSelect('Create')} type={currentMode==='Create'?'primary':'default'}>Create</Button>
           <Button onClick={()=>handleModeSelect('Drag')} type={currentMode==='Drag'?'primary':'default'}>Drag</Button>
           <Button onClick={()=>handleModeSelect('Resize')} type={currentMode==='Resize'?'primary':'default'}>Resize</Button>
-          <Button onClick={()=>handleModeSelect('Undo')} >Undo</Button>
+          <Button onClick={handleUndo}>Undo</Button>
+
         </Space>
       </div>
       <div style={{display:'flex',justifyContent:'center',alignItems:'center'}}>
@@ -507,8 +527,8 @@ const Canvas = () => {
             y={value.y}
             width={value.width}
             height={value.height}
-            
-            // onDragEnd={handleRectDragEnd}
+            dragBoundFunc={(pos)=>dragBoundFuncRectangle(pos,size,value)}
+           
           >
             <Rect
               x={0}
@@ -518,6 +538,7 @@ const Canvas = () => {
               fill="transparent"
               stroke="#F9835F"
               onClick={() => handleRectClick(index)}
+            
             />
             {Array(4)
               .fill()
@@ -528,8 +549,10 @@ const Canvas = () => {
                   y={i < 2 ? 0 : value.height}
                   radius={5}
                   fill="#F9835F"
-                  draggable
-                  onDragMove={(e) => handleCornerDragMove(e, i)}
+                  draggable={currentMode==='Resize'?true:false}
+                  onDragMove={(e) => handleResize(e, i,index)}
+                  // onDragEnd={()=>handleAnnotationChange(annotations)}
+                  dragBoundFunc={(pos) => dragBoundFunc(pos, size)}
                 />
               ))}
           </Group>
