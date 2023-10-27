@@ -433,42 +433,70 @@ const Canvas = () => {
     
   }, [selectedRect])
 
-  const handleResize = (event, index,indexRect) => {
-  
+  const handleResize = (event, index, indexRect) => {
+    const newAnnotations = [...annotations];
+    const rect = newAnnotations[indexRect];
+    const { x, y } = event.target.getStage().getPointerPosition();
     
+    // Check dragging bounds, assuming dragBoundFunc returns a limited position
+    const limitedPosition = dragBoundFunc({ x, y }, size);
+  
+    switch (index) {
+      case 0: // Top left corner
+        rect.width = rect.x + rect.width - limitedPosition.x;
+        rect.height = rect.y + rect.height - limitedPosition.y;
+        rect.x = limitedPosition.x;
+        rect.y = limitedPosition.y;
+        break;
+      case 1: // Top right corner
+        rect.width = limitedPosition.x - rect.x;
+        rect.height = rect.y + rect.height - limitedPosition.y;
+        rect.y = limitedPosition.y;
+        break;
+      case 2: // Bottom left corner
+        rect.width = rect.x + rect.width - limitedPosition.x;
+        rect.height = limitedPosition.y - rect.y;
+        rect.x = limitedPosition.x;
+        break;
+      case 3: // Bottom right corner
+        rect.width = limitedPosition.x - rect.x;
+        rect.height = limitedPosition.y - rect.y;
+        break;
+      default:
+        break;
+    }
+  
+    // Update the entire annotations array
+    setAnnotations(newAnnotations);
+  };
+  const handleDragRectangle = (event, indexRect) => {
+    if(currentMode==='Drag'){
       const newAnnotations = [...annotations];
       const rect = newAnnotations[indexRect];
-      
       const { x, y } = event.target.getStage().getPointerPosition();
-      const deltaX = x - rect.x;
-      const deltaY = y - rect.y;
-      switch (index) {
-        case 0: // Top left corner
-          rect.width -= deltaX;
-          rect.height -= deltaY;
-          rect.x = x;
-          rect.y = y;
-          break;
-        case 1: // Top right corner
-          rect.width = x - rect.x;
-          rect.height -= deltaY;
-          rect.y = y;
-          break;
-        case 2: // Bottom left corner
-          rect.width -= deltaX;
-          rect.height = y - rect.y;
-          rect.x = x;
-          break;
-        case 3: // Bottom right corner
-          rect.width = x - rect.x;
-          rect.height = y - rect.y;
-          break;
-        default:
-          break;
-      }
-      setAnnotations(newAnnotations);
+      
+      // Apply the drag bounds to ensure the rectangle stays within the limits
+      // const limitedPosition = dragBoundFuncRectangle({ x, y }, size, rect);
+      rect.x = x;
+      rect.y = y;
     
+      setAnnotations(newAnnotations);
+    }
+  
   };
+  
+  
+  // // This function will be called when the drag operation ends
+  // const handleDragEnd = () => {
+  //   // You can use the updated `annotations` array here
+  //   // to perform any final updates if needed.
+  //   // For example, you can save the annotations to the server or update the state.
+  
+  //   // In this case, we'll simply update the annotation history.
+  //   handleAnnotationChangeCurrent();
+  // };
+  
+  
 
     const handleUndo = () => {
       console.log(currentHistoryIndex);
@@ -487,7 +515,15 @@ const Canvas = () => {
         return newHistory;
       });
     };
-    
+    const handleAnnotationChangeCurrent = () => {
+      // Add the current state to the history
+      setAnnotationHistory((prevHistory) => {
+        const newHistory = [...prevHistory.slice(0, currentHistoryIndex + 1), annotations];
+        setCurrentHistoryIndex(newHistory.length - 1);
+        return newHistory;
+      });
+    };
+    console.log(annotationHistory);
   return (
     <>
       <div class="centered-div">
@@ -528,7 +564,15 @@ const Canvas = () => {
             width={value.width}
             height={value.height}
             dragBoundFunc={(pos)=>dragBoundFuncRectangle(pos,size,value)}
-           
+            // onDragMove={(e) => handleDragRectangle(e, index)}
+            // onDragEnd={(e) => {
+            //   onChange({
+            //     ...annotations,
+            //     x: e.target.x(),
+            //     y: e.target.y()
+            //   });
+            // }}
+            // onDragEnd={handleDragEnd} 
           >
             <Rect
               x={0}
@@ -551,8 +595,9 @@ const Canvas = () => {
                   fill="#F9835F"
                   draggable={currentMode==='Resize'?true:false}
                   onDragMove={(e) => handleResize(e, i,index)}
-                  // onDragEnd={()=>handleAnnotationChange(annotations)}
+                  onDragEnd={()=>handleAnnotationChangeCurrent()}
                   dragBoundFunc={(pos) => dragBoundFunc(pos, size)}
+                
                 />
               ))}
           </Group>

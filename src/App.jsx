@@ -3,12 +3,14 @@ import React from "react";
 // import viteLogo from '/vite.svg'
 import "./App.css";
 import Canvas from "./SubComponent/Canvas";
+import Canvas2 from "./SubComponent/Canvas2";
 import { Button, Space } from "antd";
 function App() {
   return (
     <>
     
-      <Canvas color />
+      {/* <Canvas color /> */}
+<Canvas2/>
     </>
   );
 }
