@@ -3,7 +3,7 @@ import { render } from "react-dom";
 import { Stage, Layer, Rect, Image } from "react-konva";
 import RTransformer from "./utils/rttransformer";
 import imgsrc from "../../src/assets/table.png";
-import { Button, Space } from "antd";
+import { Button, Input, Modal, Space, Form } from "antd";
 const Rectangle = ({ shapeProps, isSelected, onSelect, onChange ,currentMode}) => {
   const shapeRef = React.useRef();
   const trRef = React.useRef();
@@ -273,10 +273,42 @@ const Canvas2 = () => {
   const [rectangles, setRectangles] = React.useState(initialRectangles);
   const [selectedId, selectShape] = React.useState(null);
   const [selectedRect, setSelectedRect] = useState(null);
+  const [selectedRectDetails, setSelectedRectDetails] = useState(null);
   const [selectedDisplayType, setSelectedDisplayType] = useState("rows");
   const [isCreatingRect, setIsCreatingRect] = useState(false);
   const [size, setSize] = useState({ width: 900, height: 700 });
   const [currentMode, setcurrentMode] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const showModal = () => {
+    resetForm();
+    setIsModalOpen(true);
+    // console.log(selectedRectDetails);
+  };
+  const handleOk = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    resetForm();
+  };
+  const handleUpdateLabel = (values) => {
+    if (selectedRectDetails) {
+      const updatedRectangles = rectangles.map((rect) =>
+        rect.id === selectedRectDetails.id
+          ? { ...rect, label: values.label }
+          : rect
+      );
+  
+      setRectangles(updatedRectangles);
+      setIsModalOpen(false); // Close the modal after updating the label
+      resetForm();
+    }
+  };
+  const resetForm = () => {
+    form.resetFields(); // Assuming `form` is your Form instance
+  };
   const convertBoundingBoxData = () => {
     const convertedAnnotations = [];
     const displayData = data[selectedDisplayType];
@@ -289,6 +321,7 @@ const Canvas2 = () => {
         y: y1,
         width,
         height,
+        label: 'null',
         id: i,
         fill: "rgba(245, 183, 186, 0.4)",
       });
@@ -460,6 +493,38 @@ const handleDelete=()=>{
           {/* <Button onClick={handleUndo}>Undo</Button> */}
 
         </Space>
+        <Button type="primary" onClick={showModal} disabled={!selectedRectDetails}>
+        Update Label
+      </Button>
+      <Modal title="Update Label" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+      <Form
+            onFinish={handleUpdateLabel}
+            form={form}
+            initialValues={{
+              label: selectedRectDetails ? selectedRectDetails.label : '',
+            }}
+          >
+          {/* <div className="description notice">
+              Edit your Label
+          </div> */}
+                <label>Label</label>
+                <Form.Item name="label" rules={[{ required: true, message: 'Please enter Label' }]}>
+                  <Input dir="auto"/>
+                </Form.Item>
+            <div style={{ display: "flex", alignItems: "end" }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+              >
+                Update
+              </Button>
+              <Button size="large" style={{marginLeft: '8px'}} onClick={handleCancel}>
+                Cancel
+              </Button>
+            </div>
+          </Form>
+      </Modal>
       </div>
       <Stage
         width={size.width}
@@ -480,6 +545,7 @@ const handleDelete=()=>{
                 isSelected={rect.id === selectedRect}
                 onSelect={() => {
                   setSelectedRect(rect.id);
+                  setSelectedRectDetails(rect);
                 }}
                 currentMode={currentMode}
                 onChange={(newAttrs) => {
