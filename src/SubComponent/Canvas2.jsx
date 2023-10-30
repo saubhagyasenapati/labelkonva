@@ -63,14 +63,14 @@ const Rectangle = ({
             });
           }}
         />
-        <Text
+        {/* <Text
           text={shapeProps.label} // The text you want to display
           x={shapeProps.x}
           y={shapeProps.y}
-          // draggable={currentMode === "Drag"}
-          align="center" // Optional: Text alignment
+          // draggable={currentMode === "Drag
+          align="left" // Optional: Text alignment
           width={shapeProps.width} // Optional: Set text width to match the rectangle
-        />
+        /> */}
       </Group>
       {isSelected && (
         <RTransformer
@@ -99,20 +99,17 @@ const Rectangle = ({
             // maxWidth = size.width - oldBox.x;
             // const maxWidth = oldBox.width + oldBox.x;
             // const maxHeight = size.height - oldBox.y;
-
             // Ensure the new dimensions don't exceed the maximum dimensions
             const limitedBox = {
               ...newBox,
               width: Math.min(maxWidth, newBox.width),
               height: Math.min(maxHeight, newBox.height),
             };
-
             // Ensure the dimensions don't go below a minimum size (e.g., 5)
             if (newBox.x > 0) {
               limitedBox.width = Math.max(10, limitedBox.width);
             }
             limitedBox.height = Math.max(10, limitedBox.height);
-
             // Calculate the maximum x and y positions based on the 'size' prop
             const maxX = size.width - limitedBox.width;
             const maxY = size.height - limitedBox.height;
@@ -121,7 +118,6 @@ const Rectangle = ({
             // Ensure the new x and y values don't exceed the maximum positions
             limitedBox.x = Math.min(maxX, Math.max(0, newBox.x));
             limitedBox.y = Math.min(maxY, Math.max(0, newBox.y));
-
             return limitedBox;
           }}
         />
@@ -357,8 +353,18 @@ const Canvas2 = () => {
           ? { ...rect, label: values.label }
           : rect
       );
-   console.log(updatedRectangles);
+      console.log(updatedRectangles);
       handleRectangleChange(updatedRectangles);
+      const updatedSelectedRect = updatedRectangles.find(
+        (rect) => rect.id === selectedRectDetails.id
+      );
+
+      if (
+        updatedSelectedRect &&
+        updatedSelectedRect.label !== selectedRectDetails.label
+      ) {
+        setSelectedRectDetails(updatedSelectedRect);
+      }
       setIsModalOpen(false); // Close the modal after updating the label
       resetForm();
     }
@@ -379,13 +385,14 @@ const Canvas2 = () => {
         y: y1,
         width,
         height,
-        label: "null",
+        label: null,
         id: i,
         fill: "rgba(245, 183, 186, 0.4)",
       });
     }
     handleRectangleChange(convertedAnnotations);
   };
+  
   useEffect(() => {
     convertBoundingBoxData();
   }, [selectedDisplayType]);
@@ -425,13 +432,17 @@ const Canvas2 = () => {
     );
   };
   const checkDeselect = (e) => {
-    // deselect when clicked on empty area
-    const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty) {
+    const target = e.target;
+  
+    
+    if (target instanceof Konva.Stage) {
       setSelectedRect(null);
+      setSelectedRectDetails(null);
     }
   };
+  
   const handleMouseDown = (event) => {
+    
     if (currentMode === "Create") {
       const { x, y } = event.target.getStage().getPointerPosition();
       setIsCreatingRect(true);
@@ -588,7 +599,10 @@ const Canvas2 = () => {
           </Button> */}
 
           <Button
-            onClick={() => setSelectedRect(null)}
+            onClick={() => {
+              setSelectedRect(null);
+              setSelectedRectDetails(null);
+            }}
             disabled={selectedRect === null}
           >
             Deselect
@@ -605,15 +619,20 @@ const Canvas2 = () => {
           </Button>
         </Space>
 
-  <ModalComp isModalOpen={isModalOpen} handleOk={ handleOk}handleCancel={ handleCancel} handleUpdateLabel={handleUpdateLabel} form={form} selectedRectDetails={selectedRectDetails}/>
-
-     
+        <ModalComp
+          isModalOpen={isModalOpen}
+          handleOk={handleOk}
+          handleCancel={handleCancel}
+          handleUpdateLabel={handleUpdateLabel}
+          form={form}
+          selectedRectDetails={selectedRectDetails}
+        />
       </div>
       <Stage
         width={size.width}
         height={size.height}
         onMouseDown={handleMouseDown}
-        onTouchStart={checkDeselect}
+        onTouchStart={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >

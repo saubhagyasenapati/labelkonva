@@ -21,7 +21,7 @@ const ModalComp = (props) => {
         onCancel={handleCancel}
       >
         <Form
-          key={selectedRectDetails.label} // Add a key to force re-render
+          key={selectedRectDetails.label} 
           onFinish={handleUpdateLabel}
           form={form}
         >
