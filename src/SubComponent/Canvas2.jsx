@@ -83,9 +83,22 @@ const Rectangle = ({
           rotateEnabled={false}
           ref={trRef}
           boundBoxFunc={(oldBox, newBox) => {
+            let maxWidth;
+            let maxHeight;
+            if(oldBox.x === newBox.x) {
+              maxWidth = size.width - oldBox.x;
+            } else {
+              maxWidth = oldBox.width + oldBox.x;
+            }
+            if(oldBox.y === newBox.y) {
+              maxHeight = size.height - oldBox.y;
+            } else {
+              maxHeight = oldBox.height + oldBox.y;
+            }
             // Calculate the maximum width and height based on the 'size' prop
-            const maxWidth = size.width;
-            const maxHeight = size.height;
+            // maxWidth = size.width - oldBox.x;
+            // const maxWidth = oldBox.width + oldBox.x;
+            // const maxHeight = size.height - oldBox.y;
 
             // Ensure the new dimensions don't exceed the maximum dimensions
             const limitedBox = {
@@ -95,7 +108,9 @@ const Rectangle = ({
             };
 
             // Ensure the dimensions don't go below a minimum size (e.g., 5)
-            limitedBox.width = Math.max(10, limitedBox.width);
+            if (newBox.x > 0) {
+              limitedBox.width = Math.max(10, limitedBox.width);
+            }
             limitedBox.height = Math.max(10, limitedBox.height);
 
             // Calculate the maximum x and y positions based on the 'size' prop
