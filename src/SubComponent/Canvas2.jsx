@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { render } from "react-dom";
-import { Stage, Layer, Rect, Image } from "react-konva";
+import { Stage, Layer, Rect, Image, Text, Group } from "react-konva";
 import RTransformer from "./utils/rttransformer";
 import imgsrc from "../../src/assets/table.png";
-import { Button, Input, Modal, Space, Form } from "antd";
-const Rectangle = ({ shapeProps, isSelected, onSelect, onChange ,currentMode}) => {
+import { Button, Select, Input, Modal, Space, Form } from "antd";
+import { dragBoundFuncRectangle } from "./utils";
+import ModalComp from "./ModalComp";
+const Rectangle = ({
+  shapeProps,
+  isSelected,
+  onSelect,
+  onChange,
+  currentMode,
+  size,
+}) => {
   const shapeRef = React.useRef();
   const trRef = React.useRef();
 
@@ -17,42 +26,53 @@ const Rectangle = ({ shapeProps, isSelected, onSelect, onChange ,currentMode}) =
   }, [isSelected]);
   return (
     <React.Fragment>
-      <Rect
-        onClick={onSelect}
-        onTap={onSelect}
-        ref={shapeRef}
-        {...shapeProps}
-        draggable={currentMode==='Drag'}
-        onDragEnd={(e) => {
-          onChange({
-            ...shapeProps,
-            x: e.target.x(),
-            y: e.target.y(),
-          });
-        }}
-        onTransformEnd={(e) => {
-          // transformer is changing scale of the node
-          // and NOT its width or height
-          // but in the store we have only width and height
-          // to match the data better we will reset scale on transform end
-          const node = shapeRef.current;
-          const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
+      <Group>
+        <Rect
+          onClick={onSelect}
+          onTap={onSelect}
+          ref={shapeRef}
+          {...shapeProps}
+          draggable={currentMode === "Drag"}
+          onDragEnd={(e) => {
+            onChange({
+              ...shapeProps,
+              x: e.target.x(),
+              y: e.target.y(),
+            });
+          }}
+          dragBoundFunc={(pos) => dragBoundFuncRectangle(pos, size, shapeProps)}
+          onTransformEnd={(e) => {
+            // transformer is changing scale of the node
+            // and NOT its width or height
+            // but in the store we have only width and height
+            // to match the data better we will reset scale on transform end
+            const node = shapeRef.current;
+            const scaleX = node.scaleX();
+            const scaleY = node.scaleY();
 
-          // we will reset it back
-          node.scaleX(1);
-          node.scaleY(1);
-          onChange({
-            ...shapeProps,
-            x: node.x(),
-            y: node.y(),
-            // set minimal value
-            width: Math.max(5, node.width() * scaleX),
-            height: Math.max(node.height() * scaleY),
-          });
-        }}
-      />
-      {isSelected&& (
+            // we will reset it back
+            node.scaleX(1);
+            node.scaleY(1);
+            onChange({
+              ...shapeProps,
+              x: node.x(),
+              y: node.y(),
+              // set minimal value
+              width: Math.max(5, node.width() * scaleX),
+              height: Math.max(node.height() * scaleY),
+            });
+          }}
+        />
+        <Text
+          text={shapeProps.label} // The text you want to display
+          x={shapeProps.x}
+          y={shapeProps.y}
+          // draggable={currentMode === "Drag"}
+          align="center" // Optional: Text alignment
+          width={shapeProps.width} // Optional: Set text width to match the rectangle
+        />
+      </Group>
+      {isSelected && (
         <RTransformer
           anchorSize={4}
           keepRatio={false}
@@ -63,11 +83,31 @@ const Rectangle = ({ shapeProps, isSelected, onSelect, onChange ,currentMode}) =
           rotateEnabled={false}
           ref={trRef}
           boundBoxFunc={(oldBox, newBox) => {
-            // limit resize
-            if (newBox.width < 5 || newBox.height < 5) {
-              return oldBox;
-            }
-            return newBox;
+            // Calculate the maximum width and height based on the 'size' prop
+            const maxWidth = size.width;
+            const maxHeight = size.height;
+
+            // Ensure the new dimensions don't exceed the maximum dimensions
+            const limitedBox = {
+              ...newBox,
+              width: Math.min(maxWidth, newBox.width),
+              height: Math.min(maxHeight, newBox.height),
+            };
+
+            // Ensure the dimensions don't go below a minimum size (e.g., 5)
+            limitedBox.width = Math.max(10, limitedBox.width);
+            limitedBox.height = Math.max(10, limitedBox.height);
+
+            // Calculate the maximum x and y positions based on the 'size' prop
+            const maxX = size.width - limitedBox.width;
+            const maxY = size.height - limitedBox.height;
+            const maxX1 = size.width - oldBox.x;
+            const maxY1 = size.height - oldBox.y;
+            // Ensure the new x and y values don't exceed the maximum positions
+            limitedBox.x = Math.min(maxX, Math.max(0, newBox.x));
+            limitedBox.y = Math.min(maxY, Math.max(0, newBox.y));
+
+            return limitedBox;
           }}
         />
       )}
@@ -279,6 +319,8 @@ const Canvas2 = () => {
   const [size, setSize] = useState({ width: 900, height: 700 });
   const [currentMode, setcurrentMode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [rectangleHistory, setRectangleHistory] = useState([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [form] = Form.useForm();
   const showModal = () => {
     resetForm();
@@ -300,8 +342,8 @@ const Canvas2 = () => {
           ? { ...rect, label: values.label }
           : rect
       );
-  
-      setRectangles(updatedRectangles);
+   console.log(updatedRectangles);
+      handleRectangleChange(updatedRectangles);
       setIsModalOpen(false); // Close the modal after updating the label
       resetForm();
     }
@@ -309,6 +351,7 @@ const Canvas2 = () => {
   const resetForm = () => {
     form.resetFields(); // Assuming `form` is your Form instance
   };
+
   const convertBoundingBoxData = () => {
     const convertedAnnotations = [];
     const displayData = data[selectedDisplayType];
@@ -321,12 +364,12 @@ const Canvas2 = () => {
         y: y1,
         width,
         height,
-        label: 'null',
+        label: "null",
         id: i,
         fill: "rgba(245, 183, 186, 0.4)",
       });
     }
-    setRectangles(convertedAnnotations);
+    handleRectangleChange(convertedAnnotations);
   };
   useEffect(() => {
     convertBoundingBoxData();
@@ -374,74 +417,85 @@ const Canvas2 = () => {
     }
   };
   const handleMouseDown = (event) => {
-  if(currentMode==='Create'){
-    const { x, y } = event.target.getStage().getPointerPosition();
-    setIsCreatingRect(true);
-    const newAnnotations=[...rectangles, { x, y, width: 0, height: 0,   id: rectangles.length+1,
-      fill: "rgba(245, 183, 186, 0.4)",}]
-    setRectangles(newAnnotations)
-  }
-    
-    
-   
+    if (currentMode === "Create") {
+      const { x, y } = event.target.getStage().getPointerPosition();
+      setIsCreatingRect(true);
+      const newAnnotations = [
+        ...rectangles,
+        {
+          x,
+          y,
+          width: 0,
+          height: 0,
+          id: rectangles.length - 1,
+          fill: "rgba(245, 183, 186, 0.4)",
+        },
+      ];
+      setRectangles(newAnnotations);
+    }
   };
 
   const handleMouseUp = () => {
-  if(currentMode==='Create'){
-    setIsCreatingRect(false);
-  }
-     
-    //   setSelectedRect(null);
-    //   handleAnnotationChange(annotations); 
-    
-  
+    if (currentMode === "Create") {
+      setIsCreatingRect(false);
+      setSelectedRect(null);
+      handleRectangleChange(rectangles);
+    }
   };
 
   const handleMouseMove = (event) => {
-    if(currentMode==='Create'){
-        if (isCreatingRect) {
-            const { x, y } = event.target.getStage().getPointerPosition();
-            const lastAnnotation = rectangles[rectangles.length - 1];
-            const width = x - lastAnnotation.x;
-            const height = y - lastAnnotation.y;
-        
-            if (width > 0 && height > 0) {
-              const newAnnotations = [...rectangles];
-              newAnnotations[newAnnotations.length - 1] = {
-                ...lastAnnotation,
-                width,
-                height,
-                id: rectangles.length + 1,
-                fill: "rgba(245, 183, 186, 0.4)",
-              };
-        
-              setRectangles(newAnnotations); // Use setRectangles to update the state
-            }
-          }
+    if (currentMode === "Create") {
+      if (isCreatingRect) {
+        const { x, y } = event.target.getStage().getPointerPosition();
+        const lastAnnotation = rectangles[rectangles.length - 1];
+        const width = x - lastAnnotation.x;
+        const height = y - lastAnnotation.y;
+
+        if (width > 0 && height > 0) {
+          const newAnnotations = [...rectangles];
+          newAnnotations[newAnnotations.length - 1] = {
+            ...lastAnnotation,
+            width,
+            height,
+            id: newAnnotations.length - 1,
+            fill: "rgba(245, 183, 186, 0.4)",
+          };
+
+          setRectangles(newAnnotations); // Use setRectangles to update the state
+        }
+      }
     }
- 
   };
-  
+  const handleRectangleChange = (newAnnotations) => {
+    setRectangles(newAnnotations);
+    // Add the current state to the history
+    setRectangleHistory((prevHistory) => {
+      const newHistory = [
+        ...prevHistory.slice(0, currentHistoryIndex + 1),
+        newAnnotations,
+      ];
+      setCurrentHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
+  };
   const handleModeSelect = (mode) => {
-    if(currentMode!==mode){
-     setcurrentMode(mode);
+    if (currentMode !== mode) {
+      setcurrentMode(mode);
+    } else {
+      setcurrentMode(null);
     }
-    else{
-     setcurrentMode(null);
-    }
-   // Implement the drag logic here
-   // You can toggle a state variable to enable/disable dragging
- };
-const handleDelete=()=>{
-    if(currentMode==='Delete'){
+    // Implement the drag logic here
+    // You can toggle a state variable to enable/disable dragging
+  };
+  useEffect(() => {
+    if (currentMode === "Delete") {
       if (selectedRect !== null) {
         const newAnnotations = [...rectangles];
-        
         newAnnotations.splice(selectedRect, 1);
-        // handleAnnotationChange(newAnnotations);
-        setRectangles(newAnnotations)
-        setSelectedRect(null);
-    
+
+        handleRectangleChange(newAnnotations);
+        // setRectangles(newAnnotations);
+
         // Depending on your data structure, remove the corresponding entry
         if (selectedDisplayType === "rows") {
           const updatedRows = [...data.rows];
@@ -456,12 +510,19 @@ const handleDelete=()=>{
           updatedCells.splice(selectedRect, 1);
           // setData({ ...data, cells: updatedCells });
         }
+        setSelectedRect(null);
       }
-    
     }
-  
-    
-  }
+  }, [selectedRect]);
+  const handleUndo = () => {
+    console.log(currentHistoryIndex);
+    if (currentHistoryIndex > 0) {
+      const previousAnnotations = rectangleHistory[currentHistoryIndex - 1];
+      rectangleHistory.pop();
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setRectangles(previousAnnotations);
+    }
+  };
   return (
     <div>
       <div
@@ -471,67 +532,73 @@ const handleDelete=()=>{
           alignItems: "center",
         }}
       >
-        <select
+        <Select
           value={selectedDisplayType}
-          onChange={(e) => setSelectedDisplayType(e.target.value)}
+          onChange={(value) => setSelectedDisplayType(value)}
         >
-          <option value="rows">Rows</option>
-          <option value="cols">Columns</option>
-          <option value="cells">Cells</option>
-        </select>
+          <Option value="rows">Rows</Option>
+          <Option value="cols">Columns</Option>
+          <Option value="cells">Cells</Option>
+        </Select>
       </div>
       <div class="centered-div">
-        <Space direction="vertical">  
-        <Button onClick={() => {
-  handleModeSelect('Delete');
-  handleDelete();
-}} type={currentMode === 'Delete' ? 'primary' : 'default'}>Delete</Button>
-
-          <Button onClick={()=>handleModeSelect('Create')} type={currentMode==='Create'?'primary':'default'}>Create</Button>
-          <Button onClick={()=>handleModeSelect('Drag')} type={currentMode==='Drag'?'primary':'default'}>Drag</Button>
-          <Button onClick={()=>handleModeSelect('Resize')} type={currentMode==='Resize'?'primary':'default'}>Resize</Button>
-          {/* <Button onClick={handleUndo}>Undo</Button> */}
-
-        </Space>
-        <Button type="primary" onClick={showModal} disabled={!selectedRectDetails}>
-        Update Label
-      </Button>
-      <Modal title="Update Label" open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
-      <Form
-            onFinish={handleUpdateLabel}
-            form={form}
-            initialValues={{
-              label: selectedRectDetails ? selectedRectDetails.label : '',
+        <Space direction="vertical">
+          <Button
+            onClick={() => {
+              handleModeSelect("Delete");
+              handleDelete();
             }}
+            type={currentMode === "Delete" ? "primary" : "default"}
           >
-          {/* <div className="description notice">
-              Edit your Label
-          </div> */}
-                <label>Label</label>
-                <Form.Item name="label" rules={[{ required: true, message: 'Please enter Label' }]}>
-                  <Input dir="auto"/>
-                </Form.Item>
-            <div style={{ display: "flex", alignItems: "end" }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-              >
-                Update
-              </Button>
-              <Button size="large" style={{marginLeft: '8px'}} onClick={handleCancel}>
-                Cancel
-              </Button>
-            </div>
-          </Form>
-      </Modal>
+            Delete
+          </Button>
+
+          <Button
+            onClick={() => handleModeSelect("Create")}
+            type={currentMode === "Create" ? "primary" : "default"}
+          >
+            Create
+          </Button>
+          <Button
+            onClick={() => handleModeSelect("Drag")}
+            type={currentMode === "Drag" ? "primary" : "default"}
+          >
+            Drag
+          </Button>
+          {/* <Button
+            onClick={() => handleModeSelect("Resize")}
+            type={currentMode === "Resize" ? "primary" : "default"}
+          >
+            Resize
+          </Button> */}
+
+          <Button
+            onClick={() => setSelectedRect(null)}
+            disabled={selectedRect === null}
+          >
+            Deselect
+          </Button>
+          <Button onClick={handleUndo} disabled={currentHistoryIndex < 1}>
+            Undo
+          </Button>
+          <Button
+            type="primary"
+            onClick={showModal}
+            disabled={!selectedRectDetails}
+          >
+            Update Label
+          </Button>
+        </Space>
+
+  <ModalComp isModalOpen={isModalOpen} handleOk={ handleOk}handleCancel={ handleCancel} handleUpdateLabel={handleUpdateLabel} form={form} selectedRectDetails={selectedRectDetails}/>
+
+     
       </div>
       <Stage
         width={size.width}
         height={size.height}
-        // onMouseDown={checkDeselect}
-        onTouchStart={checkDeselect}
         onMouseDown={handleMouseDown}
+        onTouchStart={checkDeselect}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >
@@ -544,9 +611,10 @@ const handleDelete=()=>{
                 shapeProps={rect}
                 isSelected={rect.id === selectedRect}
                 onSelect={() => {
-                  setSelectedRect(rect.id);
+                  setSelectedRect(i);
                   setSelectedRectDetails(rect);
                 }}
+                size={size}
                 currentMode={currentMode}
                 onChange={(newAttrs) => {
                   const rects = rectangles.slice();
