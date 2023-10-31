@@ -106,9 +106,7 @@ const Rectangle = ({
               height: Math.min(maxHeight, newBox.height),
             };
             // Ensure the dimensions don't go below a minimum size (e.g., 5)
-            if (newBox.x > 0) {
-              limitedBox.width = Math.max(10, limitedBox.width);
-            }
+            limitedBox.width = Math.max(10, limitedBox.width);
             limitedBox.height = Math.max(10, limitedBox.height);
             // Calculate the maximum x and y positions based on the 'size' prop
             const maxX = size.width - limitedBox.width;
@@ -116,8 +114,16 @@ const Rectangle = ({
             const maxX1 = size.width - oldBox.x;
             const maxY1 = size.height - oldBox.y;
             // Ensure the new x and y values don't exceed the maximum positions
-            limitedBox.x = Math.min(maxX, Math.max(0, newBox.x));
-            limitedBox.y = Math.min(maxY, Math.max(0, newBox.y));
+            if(limitedBox.width === 10) {
+              limitedBox.x = oldBox.x;
+            } else {
+              limitedBox.x = Math.min(maxX, Math.max(0, newBox.x));
+            }
+            if(limitedBox.height === 10) {
+              limitedBox.y = oldBox.y;
+            } else {
+              limitedBox.y = Math.min(maxY, Math.max(0, newBox.y));
+            }
             return limitedBox;
           }}
         />
