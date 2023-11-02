@@ -5,20 +5,17 @@ const ModalComp = (props) => {
   const { isModalOpen, handleOk, handleCancel, handleUpdateLabel, form, selectedRectDetails } = props;
 
   useEffect(() => {
-    if (isModalOpen && selectedRectDetails && selectedRectDetails.label) {
+    if (selectedRectDetails && selectedRectDetails.label) {
       form.setFieldsValue({
         label: selectedRectDetails.label,
       });
     }
-  }, [isModalOpen, selectedRectDetails]);
-
+  }, [selectedRectDetails]);
+console.log(selectedRectDetails);
   return (
     selectedRectDetails && (
-      <Modal
-        title="Update Label"
-        open={isModalOpen}
-        onOk={handleOk}
-        onCancel={handleCancel}
+      <div
+        style={{position:'absolute',top:'10px',right:'10px',padding:'20px',backgroundColor:'white',borderRadius:'10px'}}
       >
         <Form
           key={selectedRectDetails.label} 
@@ -45,7 +42,7 @@ const ModalComp = (props) => {
             </Button>
           </div>
         </Form>
-      </Modal>
+      </div>
     )
   );
 };

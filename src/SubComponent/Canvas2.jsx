@@ -3,7 +3,7 @@ import { render } from "react-dom";
 import { Stage, Layer, Rect, Image, Text, Group } from "react-konva";
 import RTransformer from "./utils/rttransformer";
 import imgsrc from "../../src/assets/table.png";
-import { Button, Select, Input, Modal, Space, Form } from "antd";
+import { Button, Select, Input, Modal, Space, Form, message } from "antd";
 import { dragBoundFuncRectangle } from "./utils";
 import ModalComp from "./ModalComp";
 const Rectangle = ({
@@ -371,8 +371,9 @@ const Canvas2 = () => {
       ) {
         setSelectedRectDetails(updatedSelectedRect);
       }
-      setIsModalOpen(false); // Close the modal after updating the label
-      resetForm();
+      // setIsModalOpen(false); // Close the modal after updating the label
+      // resetForm();
+      message.success('Label Added')
     }
   };
   const resetForm = () => {
@@ -557,6 +558,17 @@ const Canvas2 = () => {
   };
   return (
     <div>
+      {selectedRectDetails&&
+        <ModalComp
+        isModalOpen={isModalOpen}
+        handleOk={handleOk}
+        handleCancel={handleCancel}
+        handleUpdateLabel={handleUpdateLabel}
+        form={form}
+        selectedRectDetails={selectedRectDetails}
+      />
+      }
+      
       <div
         style={{
           display: "flex",
@@ -616,23 +628,16 @@ const Canvas2 = () => {
           <Button onClick={handleUndo} disabled={currentHistoryIndex < 1}>
             Undo
           </Button>
-          <Button
+          {/* <Button
             type="primary"
             onClick={showModal}
             disabled={!selectedRectDetails}
           >
             Update Label
-          </Button>
+          </Button> */}
         </Space>
 
-        <ModalComp
-          isModalOpen={isModalOpen}
-          handleOk={handleOk}
-          handleCancel={handleCancel}
-          handleUpdateLabel={handleUpdateLabel}
-          form={form}
-          selectedRectDetails={selectedRectDetails}
-        />
+      
       </div>
       <Stage
         width={size.width}
@@ -653,6 +658,7 @@ const Canvas2 = () => {
                 onSelect={() => {
                   setSelectedRect(i);
                   setSelectedRectDetails(rect);
+                  resetForm();
                 }}
                 size={size}
                 currentMode={currentMode}
