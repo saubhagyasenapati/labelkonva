@@ -16,6 +16,7 @@ const Rectangle = ({
 }) => {
   const shapeRef = React.useRef();
   const trRef = React.useRef();
+  const [isHovered, setIsHovered] = React.useState(false);
 
   React.useEffect(() => {
     if (isSelected) {
@@ -24,10 +25,13 @@ const Rectangle = ({
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
+
   return (
     <React.Fragment>
       <Group>
         <Rect
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           onClick={onSelect}
           onTap={onSelect}
           ref={shapeRef}
@@ -63,14 +67,15 @@ const Rectangle = ({
             });
           }}
         />
-        {/* <Text
-          text={shapeProps.label} // The text you want to display
-          x={shapeProps.x}
-          y={shapeProps.y}
-          // draggable={currentMode === "Drag
-          align="left" // Optional: Text alignment
-          width={shapeProps.width} // Optional: Set text width to match the rectangle
-        /> */}
+        {isHovered && (
+          <Text
+            text={shapeProps.label} // The text you want to display
+            x={shapeProps.x}
+            y={shapeProps.y - 10} // Adjust the vertical position as needed
+            align="center" // Optional: Text alignment
+            fill="red"
+          />
+        )}
       </Group>
       {isSelected && (
         <RTransformer
@@ -131,6 +136,7 @@ const Rectangle = ({
     </React.Fragment>
   );
 };
+
 
 const initialRectangles = [
   {
