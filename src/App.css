@@ -4,14 +4,26 @@
   margin: 0 auto;
 
   text-align: center;
-  background-color: #254660;
-}
+  background: hsla(233, 100%, 90%, 1);
 
+  background: linear-gradient(90deg, hsla(233, 100%, 90%, 1) 0%, hsla(0, 0%, 89%, 1) 100%);
+  
+  background: -moz-linear-gradient(90deg, hsla(233, 100%, 90%, 1) 0%, hsla(0, 0%, 89%, 1) 100%);
+  
+  background: -webkit-linear-gradient(90deg, hsla(233, 100%, 90%, 1) 0%, hsla(0, 0%, 89%, 1) 100%);
+  
+  filter: progid: DXImageTransform.Microsoft.gradient( startColorstr="#CAD0FF", endColorstr="#E3E3E3", GradientType=1 );
+}
+body{
+  margin:0px;
+}
 .centered-div {
   position: fixed;
   top: 50%;
   right: 0;
   transform: translateY(-50%);
-  background-color:#22B8B9;
-  padding: 10px;
+  background-color:#9aa5fe;
+  padding: 15px;
+  border-top-left-radius: 15px;
+  border-bottom-left-radius:15px ;
 }

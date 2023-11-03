@@ -15,7 +15,7 @@ console.log(selectedRectDetails);
   return (
     selectedRectDetails && (
       <div
-        style={{position:'absolute',top:'10px',right:'10px',padding:'20px',backgroundColor:'white',borderRadius:'10px'}}
+        style={{position:'absolute',top:'40px',right:'10px',padding:'20px',backgroundColor:'white',borderRadius:'10px'}}
       >
         <Form
           key={selectedRectDetails.label} 

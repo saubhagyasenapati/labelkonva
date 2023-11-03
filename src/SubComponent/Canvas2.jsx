@@ -333,7 +333,8 @@ const Canvas2 = () => {
   const [selectedRectDetails, setSelectedRectDetails] = useState(null);
   const [selectedDisplayType, setSelectedDisplayType] = useState("rows");
   const [isCreatingRect, setIsCreatingRect] = useState(false);
-  const [size, setSize] = useState({ width: 900, height: 700 });
+  const [size, setSize] = useState({ width: 900, height: 700});
+  const [ratio, setRatio] = useState(1);
   const [currentMode, setcurrentMode] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rectangleHistory, setRectangleHistory] = useState([]);
@@ -388,10 +389,10 @@ const Canvas2 = () => {
       const width = x2 - x1;
       const height = y2 - y1;
       convertedAnnotations.push({
-        x: x1,
-        y: y1,
-        width,
-        height,
+        x: x1*ratio,
+        y: y1*ratio,
+        width:width*ratio,
+        height:height*ratio,
         label: null,
         id: i,
         fill: "rgba(245, 183, 186, 0.4)",
@@ -402,7 +403,7 @@ const Canvas2 = () => {
   
   useEffect(() => {
     convertBoundingBoxData();
-  }, [selectedDisplayType]);
+  }, [selectedDisplayType,ratio]);
   const ImageDisplay = ({ src }) => {
     const imageRef = useRef(null);
     const videoElement = useMemo(() => {
@@ -414,18 +415,23 @@ const Canvas2 = () => {
 
     useEffect(() => {
       const onload = function () {
+        const fixedWidth = 1200; 
+        const ratio = fixedWidth/ videoElement.width;
+        console.log(ratio);
         setSize({
-          width: videoElement.width,
-          height: videoElement.height,
-        });
+          width: videoElement.width*ratio,
+          height: videoElement.height*ratio,
+        })
+        setRatio(ratio)
         imageRef.current = videoElement;
       };
       videoElement.addEventListener("load", onload);
-
+    
       return () => {
         videoElement.removeEventListener("load", onload);
       };
     }, [videoElement]);
+    
 
     return (
       <Image
@@ -557,7 +563,7 @@ const Canvas2 = () => {
     }
   };
   return (
-    <div>
+    <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',flexDirection:'column'}}>
       {selectedRectDetails&&
         <ModalComp
         isModalOpen={isModalOpen}
@@ -574,6 +580,7 @@ const Canvas2 = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          marginBottom:'20px'
         }}
       >
         <Select
