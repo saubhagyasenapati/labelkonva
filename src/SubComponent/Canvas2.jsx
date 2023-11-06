@@ -25,7 +25,7 @@ const Rectangle = ({
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
-
+// console.log(shapeRef.current);
   return (
     <React.Fragment>
       <Group>
@@ -71,7 +71,7 @@ const Rectangle = ({
           <Text
             text={shapeProps.label} // The text you want to display
             x={shapeProps.x}
-            y={shapeProps.y - 10} // Adjust the vertical position as needed
+            y={shapeProps.y - 15} // Adjust the vertical position as needed
             align="center" // Optional: Text alignment
             fill="red"
           />
@@ -535,27 +535,27 @@ const Canvas2 = () => {
   useEffect(() => {
     if (currentMode === "Delete") {
       if (selectedRect !== null) {
-        const newAnnotations = [...rectangles];
-        newAnnotations.splice(selectedRect, 1);
-
+        console.log(selectedRectDetails);
+        const newAnnotations = rectangles.filter((_, index) => index !== selectedRect);
+        console.log(newAnnotations);
         handleRectangleChange(newAnnotations);
         // setRectangles(newAnnotations);
-
         // Depending on your data structure, remove the corresponding entry
-        if (selectedDisplayType === "rows") {
-          const updatedRows = [...data.rows];
-          updatedRows.splice(selectedRect, 1);
-          // setData({ ...data, rows: updatedRows });
-        } else if (selectedDisplayType === "cols") {
-          const updatedCols = [...data.cols];
-          updatedCols.splice(selectedRect, 1);
-          // setData({ ...data, cols: updatedCols });
-        } else if (selectedDisplayType === "cells") {
-          const updatedCells = [...data.cells];
-          updatedCells.splice(selectedRect, 1);
-          // setData({ ...data, cells: updatedCells });
-        }
+        // if (selectedDisplayType === "rows") {
+        //   const updatedRows = [...data.rows];
+        //   updatedRows.splice(selectedRect, 1);
+        //   // setData({ ...data, rows: updatedRows });
+        // } else if (selectedDisplayType === "cols") {
+        //   const updatedCols = [...data.cols];
+        //   updatedCols.splice(selectedRect, 1);
+        //   // setData({ ...data, cols: updatedCols });
+        // } else if (selectedDisplayType === "cells") {
+        //   const updatedCells = [...data.cells];
+        //   updatedCells.splice(selectedRect, 1);
+        //   // setData({ ...data, cells: updatedCells });
+        // }
         setSelectedRect(null);
+        setSelectedRectDetails(null)
       }
     }
   }, [selectedRect]);
@@ -568,6 +568,7 @@ const Canvas2 = () => {
       setRectangles(previousAnnotations);
     }
   };
+  console.log(rectangles);
   return (
     <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',flexDirection:'column'}}>
       {selectedRectDetails&&
@@ -603,7 +604,8 @@ const Canvas2 = () => {
           <Button
             onClick={() => {
               handleModeSelect("Delete");
-              handleDelete();
+              setSelectedRectDetails(null);
+              setSelectedRect(null)
             }}
             type={currentMode === "Delete" ? "primary" : "default"}
           >
