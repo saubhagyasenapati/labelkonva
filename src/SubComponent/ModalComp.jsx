@@ -11,7 +11,6 @@ const ModalComp = (props) => {
       });
     }
   }, [selectedRectDetails]);
-console.log(selectedRectDetails);
   return (
     selectedRectDetails && (
       <div

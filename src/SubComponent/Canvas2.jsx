@@ -25,7 +25,6 @@ const Rectangle = ({
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
-// console.log(shapeRef.current);
   return (
     <React.Fragment>
       <Group>
@@ -138,24 +137,7 @@ const Rectangle = ({
 };
 
 
-const initialRectangles = [
-  {
-    x: 10,
-    y: 10,
-    width: 100,
-    height: 100,
-    fill: "red",
-    id: "rect1",
-  },
-  {
-    x: 150,
-    y: 150,
-    width: 100,
-    height: 100,
-    fill: "green",
-    id: "rect2",
-  },
-];
+
 
 const Canvas2 = () => {
   const data = {
@@ -333,7 +315,7 @@ const Canvas2 = () => {
     //     "csv_text": "Name - Position [t][t] [t]Remote worker [t] [n]Andrew_L V Long [t]General Manager [t]32 [t] [t][n]Carla Stevens [t]Developer [t]28 [t] [t][n]EricJackson [t]Designer [t]30 [t] [t][n]Gabby Gilson [t]Sales sRep [t]24 [t] [t][n]Jake Hobbs [t]Diver [t]32 [t] [t]"
   };
 
-  const [rectangles, setRectangles] = React.useState(initialRectangles);
+  const [rectangles, setRectangles] = React.useState();
   const [selectedId, selectShape] = React.useState(null);
   const [selectedRect, setSelectedRect] = useState(null);
   const [selectedRectDetails, setSelectedRectDetails] = useState(null);
@@ -349,7 +331,6 @@ const Canvas2 = () => {
   const showModal = () => {
     resetForm();
     setIsModalOpen(true);
-    // console.log(selectedRectDetails);
   };
   const handleOk = () => {
     setIsModalOpen(false);
@@ -366,7 +347,6 @@ const Canvas2 = () => {
           ? { ...rect, label: values.label }
           : rect
       );
-      console.log(updatedRectangles);
       handleRectangleChange(updatedRectangles);
       const updatedSelectedRect = updatedRectangles.find(
         (rect) => rect.id === selectedRectDetails.id
@@ -423,7 +403,6 @@ const Canvas2 = () => {
       const onload = function () {
         const fixedWidth = 1200; 
         const ratio = fixedWidth/ videoElement.width;
-        console.log(ratio);
         setSize({
           width: videoElement.width*ratio,
           height: videoElement.height*ratio,
@@ -472,7 +451,7 @@ const Canvas2 = () => {
           y,
           width: 0,
           height: 0,
-          id: rectangles.length - 1,
+          id: `${rectangles.length - 1}`,
           fill: "rgba(245, 183, 186, 0.4)",
         },
       ];
@@ -535,9 +514,7 @@ const Canvas2 = () => {
   useEffect(() => {
     if (currentMode === "Delete") {
       if (selectedRect !== null) {
-        console.log(selectedRectDetails);
-        const newAnnotations = rectangles.filter((_, index) => index !== selectedRect);
-        console.log(newAnnotations);
+        const newAnnotations = rectangles.filter(rect => rect.id !== selectedRect);
         handleRectangleChange(newAnnotations);
         // setRectangles(newAnnotations);
         // Depending on your data structure, remove the corresponding entry
@@ -560,18 +537,17 @@ const Canvas2 = () => {
     }
   }, [selectedRect]);
   const handleUndo = () => {
-    console.log(currentHistoryIndex);
-    if (currentHistoryIndex > 0) {
+    if (currentHistoryIndex > 2) {
       const previousAnnotations = rectangleHistory[currentHistoryIndex - 1];
       rectangleHistory.pop();
       setCurrentHistoryIndex(currentHistoryIndex - 1);
       setRectangles(previousAnnotations);
     }
   };
-  console.log(rectangles);
+ 
   return (
     <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh',flexDirection:'column'}}>
-      {selectedRectDetails&&
+      {selectedRectDetails&&currentMode!=='Delete'&&
         <ModalComp
         isModalOpen={isModalOpen}
         handleOk={handleOk}
@@ -640,7 +616,7 @@ const Canvas2 = () => {
           >
             Deselect
           </Button>
-          <Button onClick={handleUndo} disabled={currentHistoryIndex < 1}>
+          <Button onClick={handleUndo} disabled={currentHistoryIndex<2}>
             Undo
           </Button>
           {/* <Button
@@ -664,14 +640,14 @@ const Canvas2 = () => {
       >
         <Layer>
           <ImageDisplay src={imgsrc} />
-          {rectangles.map((rect, i) => {
+          {rectangles&&rectangles.map((rect, i) => {
             return (
               <Rectangle
                 key={i}
                 shapeProps={rect}
                 isSelected={rect.id === selectedRect}
                 onSelect={() => {
-                  setSelectedRect(i);
+                  setSelectedRect(rect.id);
                   setSelectedRectDetails(rect);
                   resetForm();
                 }}
