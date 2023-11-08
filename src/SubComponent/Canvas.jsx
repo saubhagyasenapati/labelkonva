@@ -6,7 +6,7 @@ import { Button, Select, Input, Modal, Space, Form, message } from "antd";
 import ModalComp from "./Component/ModalComp";
 import Rectangle from "./Component/Rectangle";
 
-const Canvas2 = ({data}) => {
+const Canvas = ({data}) => {
   
   const [rectangles, setRectangles] = React.useState();
   const [selectedId, selectShape] = React.useState(null);
@@ -360,4 +360,4 @@ const Canvas2 = ({data}) => {
   );
 };
 
-export default Canvas2;
+export default Canvas;
